@@ -1,0 +1,13 @@
+"use client";
+
+import { MotionConfig } from "framer-motion";
+import { ToastProvider } from "@/components/ui/Toast";
+
+export default function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    // reducedMotion="user" makes every framer animation respect prefers-reduced-motion
+    <MotionConfig reducedMotion="user">
+      <ToastProvider>{children}</ToastProvider>
+    </MotionConfig>
+  );
+}
