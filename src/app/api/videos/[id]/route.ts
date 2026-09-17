@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
+import { del } from "@vercel/blob";
 import connectDB from "@/lib/mongodb";
 import Video from "@/models/Video";
 
@@ -17,8 +16,8 @@ export async function DELETE(
   }
 
   if (video.videoUrl) {
-    const filePath = path.join(process.cwd(), "public", video.videoUrl);
-    await fs.unlink(filePath).catch(() => {});
+        await del(video.videoUrl).catch(() => {});
+
   }
 
   await video.deleteOne();

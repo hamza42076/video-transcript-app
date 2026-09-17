@@ -2,13 +2,11 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Video from "@/models/Video";
 import OpenAI from "openai";
-import path from "path";
-import fs from "fs/promises";
+import { put } from "@vercel/blob";
 
 const openai = new OpenAI({
   apiKey: process.env.API_KEY,
 });
-
 
 export async function GET() {
   await connectDB();
@@ -39,25 +37,21 @@ export async function POST(request: Request) {
     });
 
     const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    await fs.mkdir(uploadDir, { recursive: true });
-    await fs.writeFile(
-      path.join(uploadDir, safeName),
-      Buffer.from(await file.arrayBuffer()),
-    );
+    const blob = await put(safeName, file, { access: "public" });
 
     await connectDB();
     const video = await Video.create({
       filename: file.name,
       transcript: result.text,
-      videoUrl: `/uploads/${safeName}`,
-      segments:result.segments?.map((s)=>{
-        return {
-          start:s.start,
-          end:s.end,
-          text:s.text
-        }
-      })??[],
+       videoUrl: blob.url,
+      segments:
+        result.segments?.map((s) => {
+          return {
+            start: s.start,
+            end: s.end,
+            text: s.text,
+          };
+        }) ?? [],
     });
     return NextResponse.json(video, { status: 201 });
   } catch (err) {
