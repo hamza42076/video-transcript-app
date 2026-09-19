@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { AlignLeft, Calendar, Captions, Clock3, FileVideo, ListVideo } from "lucide-react";
 import TranscriptActions from "@/components/transcribe/TranscriptActions";
 import TranscriptViewer from "@/components/transcribe/TranscriptViewer";
+import { buildCaptionCues } from "@/lib/captions";
 import { formatDate, formatDuration, wordCount } from "@/lib/format";
 import type { Segment, VideoItem } from "@/lib/types";
 
@@ -19,7 +20,8 @@ function activeSegmentIndex(segments: Segment[], t: number) {
 }
 
 export default function VideoDetail({ video, actions }: Props) {
-  const segments = (video.segments ?? []).map((s) => ({ ...s, text: s.text.trim() }));
+  // Short on-screen cues (from word timestamps when available), not Whisper’s long segments
+  const segments = buildCaptionCues(video);
   const transcript = video.transcript ?? "";
 
   // Older records have no stored file — fall back to the plain reader.

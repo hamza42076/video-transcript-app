@@ -17,6 +17,11 @@ const VideoSchema = new mongoose.Schema(
       end: Number,
       text: String,
     }],
+    words: [{
+      start: Number,
+      end: Number,
+      word: String,
+    }],
   },
   { timestamps: true },
 );

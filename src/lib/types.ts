@@ -5,6 +5,12 @@ export type Segment = {
   text: string;
 };
 
+export type Word = {
+  start: number;
+  end: number;
+  word: string;
+};
+
 export type VideoItem = {
   _id: string;
   filename: string;
@@ -13,6 +19,8 @@ export type VideoItem = {
   videoUrl?: string;
   /** Whisper segments with timestamps. Empty for older records. */
   segments?: Segment[];
+  /** Whisper word-level timestamps. Present only for videos transcribed after word timestamps were enabled. */
+  words?: Word[];
   createdAt?: string;
 };
 

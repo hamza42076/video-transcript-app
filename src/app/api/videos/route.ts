@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       file,
       model: "whisper-1",
       response_format: "verbose_json",
-      timestamp_granularities: ["segment"],
+      timestamp_granularities: ["segment", "word"],
     });
 
     // 3. DB mein save — videoUrl wahi jo browser ne bheja
@@ -49,6 +49,7 @@ export async function POST(request: Request) {
       transcript: result.text,
       videoUrl: url,
       segments: result.segments?.map((s) => ({ start: s.start, end: s.end, text: s.text })) ?? [],
+      words: result.words?.map((w) => ({ start: w.start, end: w.end, word: w.word })) ?? [],
     });
     return NextResponse.json(video, { status: 201 });
   } catch (err) {
