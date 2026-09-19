@@ -2,27 +2,35 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AudioLines, FileSearch, Sparkles } from "lucide-react";
+import { AudioLines, Sparkles, UploadCloud } from "lucide-react";
 import Waveform from "@/components/ui/Waveform";
 
-// Labels only — the backend gives no real progress, so this is purely
-// an indeterminate indicator that cycles through descriptive phases.
+// Phase 0 (upload) has real progress from the Blob client. The rest are
+// descriptive labels only — transcription gives no progress, so it stays indeterminate.
 const PHASES = [
-  { icon: FileSearch, label: "Analyzing your video…" },
+  { icon: UploadCloud, label: "Uploading your video…" },
   { icon: AudioLines, label: "Extracting audio…" },
   { icon: Sparkles, label: "Generating transcript…" },
 ];
 
-export default function ProcessingState({ filename }: { filename: string }) {
-  const [phase, setPhase] = useState(0);
+type Props = {
+  filename: string;
+  /** 0–100 while uploading; null once the upload is done and transcription is running. */
+  uploadProgress: number | null;
+};
+
+export default function ProcessingState({ filename, uploadProgress }: Props) {
+  const uploading = uploadProgress !== null;
+  // After upload, cycle through the remaining labels
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    const id = window.setInterval(() => {
-      setPhase((p) => Math.min(p + 1, PHASES.length - 1));
-    }, 4000);
+    if (uploading) return;
+    const id = window.setInterval(() => setTick((t) => t + 1), 4000);
     return () => window.clearInterval(id);
-  }, []);
+  }, [uploading]);
 
+  const phase = uploading ? 0 : Math.min(1 + tick, PHASES.length - 1);
   const Icon = PHASES[phase].icon;
 
   return (
@@ -90,13 +98,27 @@ export default function ProcessingState({ filename }: { filename: string }) {
           {filename}
         </p>
 
-        {/* Indeterminate progress bar */}
+        {/* Real progress while uploading; indeterminate shimmer while transcribing */}
         <div
           className="relative mt-8 h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-white/6"
-          aria-hidden
+          role={uploading ? "progressbar" : undefined}
+          aria-valuenow={uploading ? Math.round(uploadProgress) : undefined}
+          aria-valuemin={uploading ? 0 : undefined}
+          aria-valuemax={uploading ? 100 : undefined}
+          aria-hidden={!uploading || undefined}
         >
-          <span className="animate-shimmer absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-transparent via-accent-soft to-transparent" />
+          {uploading ? (
+            <span
+              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-accent to-accent-2 transition-[width] duration-300 ease-out"
+              style={{ width: `${Math.max(2, uploadProgress)}%` }}
+            />
+          ) : (
+            <span className="animate-shimmer absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-transparent via-accent-soft to-transparent" />
+          )}
         </div>
+        {uploading && (
+          <p className="mt-2 font-mono text-xs tabular-nums text-subtle">{Math.round(uploadProgress)}%</p>
+        )}
 
         {/* Phase dots */}
         <ol className="mt-6 flex items-center gap-2" aria-label="Processing phases">

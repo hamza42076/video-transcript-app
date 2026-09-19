@@ -11,14 +11,14 @@ import ProcessingState from "./ProcessingState";
 import TranscriptViewer from "./TranscriptViewer";
 import VideoDetail from "@/components/video/VideoDetail";
 import ErrorState from "./ErrorState";
-import { uploadVideo } from "@/lib/api";
+import { MAX_FILE_BYTES, uploadVideo } from "@/lib/api";
 import { ApiError, type ApiErrorKind, type VideoItem } from "@/lib/types";
-import { fileKind } from "@/lib/format";
+import { fileKind, formatSize } from "@/lib/format";
 
 type Stage =
   | { kind: "idle" }
   | { kind: "selected"; file: File }
-  | { kind: "processing"; file: File }
+  | { kind: "processing"; file: File; progress: number | null }
   | { kind: "done"; file: File; video: VideoItem }
   | { kind: "error"; file: File | null; errorKind: ApiErrorKind; message: string };
 
@@ -37,6 +37,15 @@ export default function TranscribeFlow() {
       });
       return;
     }
+    if (file.size > MAX_FILE_BYTES) {
+      setStage({
+        kind: "error",
+        file: null,
+        errorKind: "too-large",
+        message: `"${file.name}" is ${formatSize(file.size)}. The limit is ${formatSize(MAX_FILE_BYTES)}.`,
+      });
+      return;
+    }
     setDuration(null);
     setStage({ kind: "selected", file });
   }
@@ -47,9 +56,12 @@ export default function TranscribeFlow() {
   }
 
   async function generate(file: File) {
-    setStage({ kind: "processing", file });
+    setStage({ kind: "processing", file, progress: 0 });
     try {
-      const video = await uploadVideo(file);
+      const video = await uploadVideo(file, (p) => {
+        // Real upload progress from the Blob client; null once upload finishes and transcription starts
+        setStage({ kind: "processing", file, progress: p.percentage >= 100 ? null : p.percentage });
+      });
       if (!video?.transcript) {
         // Backend answered but without text — treat as a processing failure rather than showing an empty reader
         throw new ApiError("processing", "The server responded, but no transcript text was returned.");
@@ -94,7 +106,7 @@ export default function TranscribeFlow() {
         )}
 
         {stage.kind === "processing" && (
-          <ProcessingState key="processing" filename={stage.file.name} />
+          <ProcessingState key="processing" filename={stage.file.name} uploadProgress={stage.progress} />
         )}
 
         {stage.kind === "done" && stage.video.videoUrl && (
