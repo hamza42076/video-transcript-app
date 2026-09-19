@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Video from "@/models/Video";
 import OpenAI from "openai";
-import {put} from "@vercel/blob";
 
 const openai = new OpenAI({
   apiKey: process.env.API_KEY,

@@ -110,7 +110,12 @@ function Player({
           </ul>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          <TranscriptActions transcript={transcript} filename={video.filename} />
+          <TranscriptActions
+            transcript={transcript}
+            filename={video.filename}
+            segments={segments}
+            videoUrl={video.videoUrl}
+          />
           {actions}
         </div>
       </header>
